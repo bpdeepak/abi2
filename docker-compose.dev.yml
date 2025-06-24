@@ -1,0 +1,28 @@
+# docker-compose.dev.yml
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+  ai_framework:
+    build:
+      context: ./ai_framework
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
