@@ -1,4 +1,6 @@
 # docker-compose.dev.yml
+version: '3.8'
+
 services:
   frontend:
     build:
@@ -6,23 +8,62 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      #- /app/node_modules
+
   backend:
+    env_file:
+      - ./backend/.env
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
     ports:
       - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      mongodb:
+        condition: service_healthy # This is now checking the simpler nc command
+      redis:
+        condition: service_healthy
+
   ai_framework:
     build:
       context: ./ai_framework
       dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
-  mongodb:
+    volumes:
+      - ./ai_framework:/app
+
+  mongodb: # Service name
     image: mongo:6.0
     ports:
-      - "27017:27017"
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck: # REVISED: Using nc -z to check if port 27017 is open
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/localhost/27017'"]
+      interval: 5s # Check more frequently
+      timeout: 3s
+      retries: 10 # Allow more retries for initial startup
+      start_period: 20s # Slightly reduce start period as nc is faster
+
   redis:
     image: redis:7.0-alpine
     ports:
-      - "6379:6379"
+      - "6378:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongodb_data:
+  redis_data:
